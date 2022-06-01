@@ -1,42 +1,17 @@
-Before Installing
-=================
+# aura-gpu-dkms
 
-You are required to have `gcc`, `make` and `kernel-headers` installed for building the module.
+i2c driver for AURA capable GPUs 
 
-To detect your kernel version run:
-```
-uname -r
-```
-It will output something like
-```
-5.3.11-1-MANJARO
-```
-Then, on Manjaro, run:
-```
-sudo pacman -S linux53-headers
-```
+## Installing
 
-To Install
-==========
-Clone the repo into a github directory in your home folder:
-```
-mkdir github
-cd github
-git clone https://github.com/twifty/aura-gpu.git
-cd aura-gpu
-```
-Then run:
-```
-sudo make dkms
-```
+You can get releases for Fedora from my [COPR](https://copr.fedorainfracloud.org/coprs/kylegospo/aura-gpu-dkms/).
 
-After Install
-=============
+If you wish to use this with Secure Boot, follow [this guide](https://gist.github.com/KyleGospo/9adbe078d1d7f160ae43c091df98f773).
+
+## After Install
+
 The `i2c-dev` module is required:
-```
-sudo pacman -S i2c-tools
-sudo modprobe i2c-dev
-```
+
 List all i2c devices with:
 ```
 sudo i2cdetect -l
