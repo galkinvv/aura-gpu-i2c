@@ -43,6 +43,7 @@ dkms install -m %{dkms_name} -v %{version} -q --force || :
 dkms remove -m %{dkms_name} -v %{version} -q --all || :
 
 %files
+%doc README.md
 %{_usrsrc}/%{dkms_name}-%{version}
 %{_sysconfdir}/modules-load.d/aura-gpu.conf
 
