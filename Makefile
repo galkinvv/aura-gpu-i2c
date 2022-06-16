@@ -6,7 +6,7 @@ ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 KERNEL_SOURCE_DIR := /lib/modules/$(shell uname -r)/build
 
 all:
-	make -C "$(KERNEL_SOURCE_DIR)" M="$(PWD)" modules EXTRA_CFLAGS="-g -DDEBUG"
+	make -C "$(KERNEL_SOURCE_DIR)" M="$(PWD)" modules EXTRA_CFLAGS="-g -DDEBUG" GCC_PLUGINS_CFLAGS=
 
 clean:
 	make -C "$(KERNEL_SOURCE_DIR)" M="$(PWD)" clean
