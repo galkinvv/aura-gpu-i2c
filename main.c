@@ -3,14 +3,14 @@
 #include <linux/pci.h>
 
 #include "debug.h"
-#include "aura-gpu-hw.h"
+#include "aura-gpu-i2c.h"
 
 static struct i2c_adapter *adapter = NULL;
 
 static int __init aura_module_init (
     void
 ){
-    adapter = aura_i2c_bios_create();
+    adapter = gpu_adapter_create();
     if (IS_ERR_OR_NULL(adapter))
         CLEAR_ERR(adapter);
 
@@ -21,7 +21,8 @@ static void __exit aura_module_exit (
     void
 ){
     if (adapter)
-        aura_i2c_bios_destroy(adapter);
+        gpu_adapter_destroy(adapter);
+    adapter = NULL;
 }
 
 module_init(aura_module_init);
