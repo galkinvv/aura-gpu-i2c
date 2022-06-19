@@ -115,11 +115,14 @@ static error_t open_engine (
     reg = context->reg_service;
 
     reg_update_ex(reg, context->registers->GENERIC_I2C_CONTROL, (struct reg_fields[]){
-        /*
-
-         */
         PIN_FIELDS(context, GENERIC_I2C_ENABLE, 1),
-    }, 1);
+        PIN_FIELDS(context, GENERIC_I2C_SEND_RESET, 1),
+    }, 2);
+
+    reg_update_ex(reg, context->registers->GENERIC_I2C_CONTROL, (struct reg_fields[]){
+        PIN_FIELDS(context, GENERIC_I2C_ENABLE, 1),
+        PIN_FIELDS(context, GENERIC_I2C_SEND_RESET, 0),
+    }, 2);
 
     /*
         Read       reg mmDCO_MEM_PWR_CTRL                    6db6d800
@@ -145,6 +148,7 @@ static error_t open_engine (
     }, 2);
 
     // set_speed(engine, 100);
+    reg_write(reg, context->registers->GENERIC_I2C_SPEED, 0x01F40002); //threshold 2, 50KHz
 
     return 0;
 }
@@ -394,7 +398,7 @@ static enum aura_i2c_result get_channel_status (
     uint32_t value = reg_get_ex(reg, context->registers->GENERIC_I2C_STATUS, &status, 1);
 
     if (status.value || value == 0) {
-        // AURA_DBG("I2C_CHANNEL_OPERATION_ENGINE_BUSY");
+        AURA_DBG("I2C_CHANNEL_OPERATION_ENGINE_BUSY: 0x%x 0x%x", status.value, value);
         return I2C_CHANNEL_OPERATION_ENGINE_BUSY;
     }
 
