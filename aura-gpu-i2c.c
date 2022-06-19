@@ -27,7 +27,8 @@ enum aura_i2c_result {
     I2C_CHANNEL_OPERATION_HW_REQUEST_I2C_BUS,
     I2C_CHANNEL_OPERATION_WRONG_PARAMETER,
     I2C_CHANNEL_OPERATION_OUT_NB_OF_RETRIES,
-    I2C_CHANNEL_OPERATION_NOT_STARTED
+    I2C_CHANNEL_OPERATION_NOT_STARTED,
+    I2C_CHANNEL_OPERATION_STOPPED,
 };
 
 enum aura_i2c_action {
@@ -110,16 +111,32 @@ static error_t open_engine (
 
     if (IS_NULL(context))
         return -EINVAL;
+    
+    AURA_DBG("open_engine");
 
     mutex_lock(&context->mutex);
     reg = context->reg_service;
 
     reg_update_ex(reg, context->registers->GENERIC_I2C_CONTROL, (struct reg_fields[]){
-        /*
-
-         */
         PIN_FIELDS(context, GENERIC_I2C_ENABLE, 1),
-    }, 1);
+        PIN_FIELDS(context, GENERIC_I2C_SOFT_RESET, 0),
+        PIN_FIELDS(context, GENERIC_I2C_SEND_RESET, 1),
+        PIN_FIELDS(context, GENERIC_I2C_GO, 1),
+    }, 4);
+
+    mdelay(1);
+
+    reg_update_ex(reg, context->registers->GENERIC_I2C_CONTROL, (struct reg_fields[]){
+        PIN_FIELDS(context, GENERIC_I2C_ENABLE, 1),
+        PIN_FIELDS(context, GENERIC_I2C_SOFT_RESET, 0),
+        PIN_FIELDS(context, GENERIC_I2C_SEND_RESET, 0),
+        PIN_FIELDS(context, GENERIC_I2C_GO, 0),
+    }, 4);
+
+    mdelay(1);
+    
+    clear_ack(context);
+    reg_write(reg, context->registers->GENERIC_I2C_INTERRUPT_CONTROL, 0);
 
     /*
         Read       reg mmDCO_MEM_PWR_CTRL                    6db6d800
@@ -144,7 +161,10 @@ static error_t open_engine (
         PIN_FIELDS(context, GENERIC_I2C_SDA_PIN_SEL, 0x28),
     }, 2);
 
-    // set_speed(engine, 100);
+    reg_write(reg, context->registers->GENERIC_I2C_INTERRUPT_CONTROL, 0);
+    reg_write(reg, context->registers->GENERIC_I2C_SPEED, 0x01F40002); //threshold 2, 50KHz
+    reg_write(reg, context->registers->GENERIC_I2C_SETUP, 0xFF000183); //polaris variant: DataDriveEn + DataDriveSel + ClkDriveEn + IntraByteDelay=1 + TimeoutLimit = 0xFF
+    
 
     return 0;
 }
@@ -336,7 +356,7 @@ static void process_reply (
         PIN_FIELDS(context, GENERIC_I2C_DATA, 0)
     };
 
-    // AURA_DBG("process_reply");
+    AURA_DBG("process_reply");
 
     reg_set_ex(reg, context->registers->GENERIC_I2C_DATA, 0, (struct reg_fields[]){
         /*
@@ -400,7 +420,7 @@ static enum aura_i2c_result get_channel_status (
 
     if (value & context->masks->GENERIC_I2C_STOPPED_ON_NACK) {
         // AURA_DBG("I2C_CHANNEL_OPERATION_NO_RESPONSE");
-        return I2C_CHANNEL_OPERATION_NO_RESPONSE;
+        return I2C_CHANNEL_OPERATION_STOPPED;
     }
 
     if (value & context->masks->GENERIC_I2C_TIMEOUT) {
@@ -441,6 +461,9 @@ enum aura_i2c_result poll_engine (
     } while (timeout--);
 
     clear_ack(context);
+    
+    AURA_DBG("Anwser in poll_engine after %d delays ", context->timeout_interval - timeout);
+    if (!timeout) AURA_DBG("timeout in poll_engine");
 
     return timeout != 0 ? result : I2C_CHANNEL_OPERATION_TIMEOUT;
 }
@@ -486,6 +509,7 @@ static bool submit_payload (
     /* obtain timeout value before submitting request */
     // transaction_timeout = calculate_timeout(engine, payload->length + 1);
 
+
     submit_transaction(context, &request);
 
     if ((request.status == I2C_CHANNEL_OPERATION_FAILED) || (request.status == I2C_CHANNEL_OPERATION_ENGINE_BUSY))
@@ -501,6 +525,7 @@ static bool submit_payload (
 
         return true;
     }
+    AURA_DBG("submit_payload polling return 0x%x", operation_result);
 
     return false;
 }
