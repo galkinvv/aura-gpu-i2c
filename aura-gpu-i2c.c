@@ -414,7 +414,7 @@ static enum aura_i2c_result get_channel_status (
     uint32_t value = reg_get_ex(reg, context->registers->GENERIC_I2C_STATUS, &status, 1);
 
     if (status.value || value == 0) {
-        // AURA_DBG("I2C_CHANNEL_OPERATION_ENGINE_BUSY");
+        AURA_DBG("I2C_CHANNEL_OPERATION_ENGINE_BUSY: 0x%x 0x%x", status.value, value);
         return I2C_CHANNEL_OPERATION_ENGINE_BUSY;
     }
 
